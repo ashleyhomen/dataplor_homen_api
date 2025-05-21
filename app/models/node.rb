@@ -26,6 +26,19 @@ class Node < ApplicationRecord
     # 2. Additinal depth could be added, which would change the results 
     # 3. Any change to the nodes db whould require a cache clear
     query = build_common_ancestors_query(node)
+
+    # Approach considerations:
+    # 1. I prioritized minimal DB calls
+    # -- Iterating over the results would require multiple calls to the DB
+    # -- Loops would be slow for large datasets
+    # 2. Only load the data required for the results
+    # -- The query is optimized to only return the data needed
+    # 3. How I broke down the prolem:
+    # -- 1. Get all node ancestors
+    # -- 2. Join on common ancestors
+    # -- 3. Add sorting to prevent misordered ancestor (ids may not be in order)
+    #       This allowed to to find only the first and last shared ancestors
+    # -- 4. Get the root and lowest ancestor and depth
     result = ActiveRecord::Base.connection.execute(query).first.symbolize_keys
 
     result[:depth] = nil if result[:depth].zero?
